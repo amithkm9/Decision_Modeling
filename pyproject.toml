@@ -1,0 +1,26 @@
+[project]
+name = "compuopti-staffing"
+version = "0.1.0"
+description = "Multi-objective staff scheduling for CompuOpti (OR-Tools CP-SAT), in one notebook"
+requires-python = ">=3.11"
+dependencies = [
+    "ipywidgets>=8.1.9",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.11.2",
+    "ortools>=9.15.6755",
+    "pandas>=3.1.1",
+]
+
+[dependency-groups]
+dev = ["ruff>=0.17.4"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["03_tutorials"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["E741"]  # `I` is the instance, as in the maths
