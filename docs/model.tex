@@ -608,7 +608,45 @@ gives up 3.1\,\% and delivers everything on time.}
 \label{fig:gantt}
 \end{sidewaysfigure}
 
-\subsection{Verification and scaling}
+\subsection{Generated instances}
+
+The generator (notebook \S9) writes the same JSON format as the given files. Gains grow with workload
+and urgency, each employee gets one holiday block, and instances are redrawn until demand exceeds
+capacity, as in the given data. Every instance is reproducible from its seed and is saved in the
+repository folder \texttt{Datasets/generated/}; the file name gives horizon, employees, projects,
+qualifications and seed (\texttt{h15\_s4\_j9\_q5\_seed1} is 15 days, 4 employees, 9 projects,
+5 qualifications, seed 1).
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{@{}lrrlrc@{}}
+\toprule
+Instance & $x$ variables & demand/cap. & objectives & Pareto plans & time \\
+\midrule
+\texttt{h15\_s4\_j9\_q5\_seed1}  &   682 & 1.42 & brief's four & \textbf{38} & -- \\
+\midrule
+\texttt{h10\_s3\_j6\_q4\_seed0}  &   262 & 1.04 & profit, longest & 3  & $<0.1$\,s \\
+\texttt{h10\_s3\_j6\_q4\_seed1}  &   221 & 1.07 & profit, longest & 4  & 0.1\,s \\
+\texttt{h15\_s4\_j9\_q4\_seed0}  &   864 & 1.22 & profit, longest & 5  & 5.3\,s \\
+\texttt{h15\_s4\_j9\_q4\_seed1}  &   721 & 1.21 & profit, longest & 6  & 0.2\,s \\
+\texttt{h20\_s5\_j12\_q6\_seed0} & 1{,}348 & 1.13 & profit, longest & 7  & 0.7\,s \\
+\texttt{h20\_s5\_j12\_q6\_seed1} & 1{,}158 & 1.33 & profit, longest & 10 & 8.2\,s \\
+\bottomrule
+\end{tabular}
+\caption{Fronts on our generated instances; every one is proven exact. ``Longest'' is the longest
+project (objective $f_2$).}
+\label{tab:gen}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\linewidth]{figures/scaling.pdf}
+\caption{Time to the exact (profit, longest project) front against model size: under 10\,s up to
+about 1{,}350 decision variables, but the time grows quickly and unevenly with size, which is why
+the medium and large fronts run under a time budget.}
+\end{figure}
+
+\subsection{Verification}
 
 \begin{itemize}
   \item \textbf{Brute force.} On 10 random tiny instances (3 days, 2 employees, 3 projects), we list
@@ -619,9 +657,6 @@ gives up 3.1\,\% and delivers everything on time.}
         two-objective toy front.
   \item \textbf{Independent checker.} Every reported plan re-passes rules R1--R5, and every
         objective is recomputed from the raw assignments.
-  \item \textbf{Scaling.} On generated instances, the exact (profit, longest project) fronts are all
-        proven, in under 10\,s up to about 1{,}350 decision variables, but the time grows quickly
-        and unevenly with size.
 \end{itemize}
 
 %=====================================================================
