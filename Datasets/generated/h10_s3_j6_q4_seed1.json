@@ -1,0 +1,104 @@
+{
+ "horizon": 10,
+ "qualifications": [
+  "A",
+  "B",
+  "C",
+  "D"
+ ],
+ "staff": [
+  {
+   "name": "S1",
+   "qualifications": [
+    "A",
+    "B",
+    "D",
+    "C"
+   ],
+   "vacations": [
+    9,
+    10
+   ]
+  },
+  {
+   "name": "S2",
+   "qualifications": [
+    "C",
+    "A",
+    "B"
+   ],
+   "vacations": [
+    7
+   ]
+  },
+  {
+   "name": "S3",
+   "qualifications": [
+    "D",
+    "B"
+   ],
+   "vacations": []
+  }
+ ],
+ "jobs": [
+  {
+   "name": "Job1",
+   "gain": 5,
+   "due_date": 9,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "A": 1,
+    "B": 3
+   }
+  },
+  {
+   "name": "Job2",
+   "gain": 10,
+   "due_date": 6,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "A": 2
+   }
+  },
+  {
+   "name": "Job3",
+   "gain": 20,
+   "due_date": 7,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "C": 3,
+    "D": 4
+   }
+  },
+  {
+   "name": "Job4",
+   "gain": 5,
+   "due_date": 9,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "A": 3,
+    "B": 3,
+    "D": 1
+   }
+  },
+  {
+   "name": "Job5",
+   "gain": 25,
+   "due_date": 6,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "D": 3
+   }
+  },
+  {
+   "name": "Job6",
+   "gain": 15,
+   "due_date": 8,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "D": 1,
+    "B": 5
+   }
+  }
+ ]
+}
