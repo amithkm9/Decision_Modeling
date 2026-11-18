@@ -40,6 +40,8 @@ Decision Modelling project · CentraleSupélec · course by V. Mousseau
 - Two independent Pareto methods return **identical fronts**, and on 20 random tiny instances the
   solver's front **equals a brute-force enumeration** of every possible schedule.
 - The maximum profit is proven twice: by CP-SAT, and by an independent **Hall-theorem certificate**.
+- On **our own generated instances** (saved in [`Datasets/generated/`](Datasets/generated)), every
+  front is exact: 38 plans for the four objectives on a 15 × 4 × 9 instance.
 
 ---
 
@@ -152,6 +154,21 @@ projects last longer, while fairness barely conflicts with profit on the exact t
 ### Proof of the maximum profit
 ![Proof ladder: each bar is an upper bound on the profit](docs/figures/proof_ladder.png)
 
+### Our generated instances
+The generator writes the same JSON format as the given files, with demand above capacity as in the
+real data; every instance below is reproducible from its seed and saved in
+[`Datasets/generated/`](Datasets/generated).
+
+| Instance (days × employees × projects) | Decision variables | Objectives | Pareto plans | Exact |
+|:--|:--:|:--|:--:|:--:|
+| `h15_s4_j9_q5_seed1` (15 × 4 × 9) | 682 | brief's four | **38** | ✔ |
+| 6 instances, 10 × 3 × 6 to 20 × 5 × 12 | 221 – 1,348 | profit, longest project | 3 – 10 | ✔ all |
+
+![Time to the exact front on generated instances](docs/figures/scaling.png)
+
+Every front is proven in under 10 s, but the time grows quickly and unevenly with size: this is why
+the medium and large fronts run under a time budget.
+
 ---
 
 ## Run it
@@ -165,7 +182,7 @@ uv run jupyter lab CompuOpti_staffing.ipynb                  # then Run All (abo
 
 `TL` (seconds per solve) and `BUDGET` (seconds per front) in the first code cell trade run time
 against how many medium/large points are proven. The last section of the notebook draws all the
-figures and re-exports the six key ones to `docs/figures/`.
+figures and re-exports the seven key ones to `docs/figures/`.
 
 To rebuild the PDF: `cd docs && tectonic -X compile model.tex`.
 
@@ -179,7 +196,7 @@ To rebuild the PDF: `cd docs && tectonic -X compile model.tex`.
 | 4b | Profit certificate | Hall-theorem proof that the maximum is optimal |
 | 5–6 | Pareto methods, toy | exact fronts (4 and 6 objectives), both methods compared, slider over plans |
 | 7–8 | Medium and large | fronts under a time budget, payoff tables |
-| 9 | Instance generator | same JSON format; scaling test |
+| 9 | Instance generator | same JSON format; exact fronts on our instances, saved to `Datasets/generated/`; scaling test |
 | 10 | Brute-force verification | solver front = enumeration on 20 / 20 cases |
 | 11 | Conclusions | |
 | 12 | Figures | the presentation figures in this README |
@@ -194,6 +211,7 @@ To rebuild the PDF: `cd docs && tectonic -X compile model.tex`.
 │   └── figures/                            figures exported by the notebook (PNG + vector PDF)
 ├── reference_model/                        course reference MILP: notation, variables, full model
 ├── Datasets/                               toy, medium and large instances (given)
+│   └── generated/                          our instances from the generator (JSON, same format)
 ├── Projet_MScAI_2026_27-3.pdf              project brief (given)
 ├── TP0-Corrigé.ipynb                       course tutorial (given)
 └── pyproject.toml, uv.lock                 Python dependencies
