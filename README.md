@@ -11,7 +11,7 @@ Decision Modelling project · CentraleSupélec · course by V. Mousseau
 ![Pareto fronts: exact on toy](https://img.shields.io/badge/Pareto%20front-exact%20on%20toy-1baf7a)
 ![Max profit: certified](https://img.shields.io/badge/max%20profit-certified-1baf7a)
 
-[**Notebook**](CompuOpti_staffing_improved%20(1).ipynb) ·
+[**Notebook**](CompuOpti_staffing.ipynb) ·
 [**Model & maths (PDF)**](docs/model.pdf) ·
 [**Figures**](docs/figures)
 
@@ -160,7 +160,7 @@ You need [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync                                                      # ortools, pandas, matplotlib, jupyter
-uv run jupyter lab "CompuOpti_staffing_improved (1).ipynb"   # then Run All (about 15–25 min)
+uv run jupyter lab CompuOpti_staffing.ipynb                  # then Run All (about 15–25 min)
 ```
 
 `TL` (seconds per solve) and `BUDGET` (seconds per front) in the first code cell trade run time
@@ -188,11 +188,11 @@ To rebuild the PDF: `cd docs && tectonic -X compile model.tex`.
 
 ```text
 .
-├── CompuOpti_staffing_improved (1).ipynb   the whole project: model, Pareto search, proof, plots, generator
+├── CompuOpti_staffing.ipynb                the whole project: model, Pareto search, proof, plots, generator
 ├── docs/
 │   ├── model.pdf / model.tex               model, equations and proofs (LaTeX)
 │   └── figures/                            figures exported by the notebook (PNG + vector PDF)
-├── 02_reference_model/                     course reference MILP: notation, variables, full model
+├── reference_model/                        course reference MILP: notation, variables, full model
 ├── Datasets/                               toy, medium and large instances (given)
 ├── Projet_MScAI_2026_27-3.pdf              project brief (given)
 ├── TP0-Corrigé.ipynb                       course tutorial (given)
