@@ -1,0 +1,152 @@
+{
+ "horizon": 15,
+ "qualifications": [
+  "A",
+  "B",
+  "C",
+  "D"
+ ],
+ "staff": [
+  {
+   "name": "S1",
+   "qualifications": [
+    "A",
+    "B",
+    "C"
+   ],
+   "vacations": [
+    14,
+    15
+   ]
+  },
+  {
+   "name": "S2",
+   "qualifications": [
+    "C",
+    "D",
+    "A"
+   ],
+   "vacations": [
+    7,
+    8
+   ]
+  },
+  {
+   "name": "S3",
+   "qualifications": [
+    "B",
+    "A",
+    "D"
+   ],
+   "vacations": [
+    9
+   ]
+  },
+  {
+   "name": "S4",
+   "qualifications": [
+    "A",
+    "C",
+    "D"
+   ],
+   "vacations": [
+    15
+   ]
+  }
+ ],
+ "jobs": [
+  {
+   "name": "Job1",
+   "gain": 20,
+   "due_date": 14,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "C": 3,
+    "B": 4,
+    "A": 3
+   }
+  },
+  {
+   "name": "Job2",
+   "gain": 5,
+   "due_date": 11,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "D": 1,
+    "B": 1,
+    "C": 1
+   }
+  },
+  {
+   "name": "Job3",
+   "gain": 50,
+   "due_date": 6,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "A": 3,
+    "C": 2,
+    "B": 3
+   }
+  },
+  {
+   "name": "Job4",
+   "gain": 25,
+   "due_date": 13,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "B": 7
+   }
+  },
+  {
+   "name": "Job5",
+   "gain": 30,
+   "due_date": 12,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "A": 3,
+    "D": 5
+   }
+  },
+  {
+   "name": "Job6",
+   "gain": 55,
+   "due_date": 6,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "A": 2,
+    "C": 3,
+    "B": 4
+   }
+  },
+  {
+   "name": "Job7",
+   "gain": 60,
+   "due_date": 7,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "D": 3,
+    "B": 2,
+    "A": 2
+   }
+  },
+  {
+   "name": "Job8",
+   "gain": 40,
+   "due_date": 7,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "D": 1,
+    "A": 6
+   }
+  },
+  {
+   "name": "Job9",
+   "gain": 55,
+   "due_date": 6,
+   "daily_penalty": 3,
+   "working_days_per_qualification": {
+    "A": 7
+   }
+  }
+ ]
+}
