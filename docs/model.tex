@@ -1,6 +1,6 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[10pt,a4paper]{article}
 
-\usepackage[margin=2.3cm]{geometry}
+\usepackage[margin=2cm]{geometry}
 \usepackage{amsmath,amssymb,amsthm,mathtools}
 \usepackage{booktabs,tabularx,array,multirow}
 \usepackage{graphicx}
@@ -10,8 +10,8 @@
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
 \usepackage{float}
-\usepackage{rotating}
 \usepackage{enumitem}
+\usepackage{multicol}
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage{microtype}
 \usepackage[colorlinks=true,linkcolor=NavyBlue,urlcolor=NavyBlue,citecolor=NavyBlue]{hyperref}
@@ -47,10 +47,14 @@
 
 \setlist{itemsep=2pt,topsep=4pt}
 \setlength{\parskip}{3pt}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.8}
 
 \title{\textbf{CompuOpti: multi-objective staff scheduling}\\[4pt]
 \large Model, equations and exact Pareto methods}
-\author{Decision Modelling project (V.~Mousseau), CentraleSup\'elec}
+\author{Amith Kandhi Manjunatha Reddy, \ Mohamed Suhail Shajahan, \ Sreevalli Yelisetti\\[4pt]
+\small Decision Modelling project (V.~Mousseau), MSc Artificial Intelligence, CentraleSup\'elec}
 \date{November 2026}
 
 \begin{document}
@@ -60,19 +64,17 @@
 \noindent
 CompuOpti must decide which employee works on which project, with which skill, on which day, over a
 horizon of working days. The three given instances ask for more person-days than the staff can
-supply, so the real decision is which projects to accept. We formulate the problem as a 0/1 model
+supply, so the real decision is which projects to accept~\cite{brief}. We formulate the problem as a 0/1 model
 solved with Google OR-Tools CP-SAT, using a \emph{time-window} encoding that measures project
 duration and lateness without big-$M$ constants. We optimise the brief's four objectives (profit,
 longest project, projects per employee, late projects) and two of our own (largest team, fairness
 gap). Two exact methods compute the non-dominated set: an $\varepsilon$-constraint method for two
 objectives and a disjunctive exclusion method for any number. A separate certificate based on Hall's
-theorem proves the maximum profit independently of the solver. This document states every set,
-variable, constraint and objective, and proves why each method is exact.
+theorem proves the maximum profit independently of the solver. We state every set, variable,
+constraint and objective, prove why each method is exact, and report the results on the three given
+instances and on instances from our own generator.
 \end{abstract}
 
-\tableofcontents
-\vspace{1em}
-\hrule
 
 %=====================================================================
 \section{The problem}
@@ -93,22 +95,22 @@ employee-day either to one (project, skill) pair or to nothing. The brief impose
 
 \Cref{fig:pipeline} shows the whole method; the rest of this document details each box.
 
-\begin{figure}[ht]
+\begin{figure}[!htbp]
 \centering
 \begin{tikzpicture}[
-  node distance=5mm and 7mm,
-  box/.style={draw=cink, rounded corners=3pt, fill=white, align=center, font=\small,
-              minimum height=11mm, text width=27mm, line width=0.6pt},
+  node distance=4mm and 7mm,
+  box/.style={draw=cink, rounded corners=3pt, fill=white, align=center, font=\footnotesize,
+              minimum height=9mm, text width=27mm, line width=0.6pt},
   hl/.style={box, draw=cblue, line width=1pt},
   arr/.style={-{Stealth[length=2.2mm]}, cink, line width=0.7pt}]
   \node[box] (data) {\textbf{Instance}\\ JSON: staff,\\ skills, projects};
   \node[hl, right=of data] (model) {\textbf{CP-SAT model}\\ $x,y$ + time\\ windows $a,b,w$};
   \node[box, right=of model] (pareto) {\textbf{Pareto search}\\ $\varepsilon$-constraint /\\ disjunctive};
   \node[box, right=of pareto] (check) {\textbf{Independent}\\ \textbf{checker}\\ re-tests R1--R5};
-  \node[box, below=9mm of model] (cert) {\textbf{Profit certificate}\\ Hall sets +\\ small sub-models};
-  \node[box, below=9mm of check] (viz) {\textbf{Objective space}\\ fronts, conflicts,\\ price of goals};
-  \node[box, below=9mm of pareto] (dec) {\textbf{Decision space}\\ Gantt chart of\\ any Pareto plan};
-  \node[box, below=9mm of data] (gen) {\textbf{Generator}\\ new instances,\\ scaling test};
+  \node[box, below=6mm of model] (cert) {\textbf{Profit certificate}\\ Hall sets +\\ small sub-models};
+  \node[box, below=6mm of check] (viz) {\textbf{Objective space}\\ fronts, conflicts,\\ price of goals};
+  \node[box, below=6mm of pareto] (dec) {\textbf{Decision space}\\ Gantt chart of\\ any Pareto plan};
+  \node[box, below=6mm of data] (gen) {\textbf{Generator}\\ new instances,\\ scaling test};
   \draw[arr] (data) -- (model);
   \draw[arr] (model) -- (pareto);
   \draw[arr] (pareto) -- (check);
@@ -122,13 +124,25 @@ from the solver.}
 \label{fig:pipeline}
 \end{figure}
 
+\paragraph{Why Google OR-Tools CP-SAT.} The course tutorial uses Gurobi; we chose CP-SAT~\cite{ortools}
+for four reasons. (i) Our model has only 0/1 variables and integer data, which is exactly what CP-SAT is
+built for: it combines constraint propagation with SAT-style clause learning (at a dead end it learns
+a new clause, so the same conflict is not explored twice~\cite{stuckey}) and runs several strategies in parallel on
+all cores (LP relaxation, local search, \dots) that share bounds. (ii) Logic constraints are written
+directly (implications, \emph{at most one}, \emph{only enforce if}), so the time window
+(\cref{fig:window}) and the ``beat the last plan on one objective'' constraint of \cref{alg:disj}
+need no big-$M$. (iii) The solver says \texttt{OPTIMAL} only with a proof, which is how we mark every
+Pareto point as proven or not, and the same model is reused in the Pareto loop with a warm start from
+the previous plan. (iv) It is free, so anyone can rerun the notebook; on the three instances it gives
+the same maximum profit as the course Gurobi model.
+
 %=====================================================================
 \section{Notation}
 %=====================================================================
 
 We keep the notation of the course's reference model and add the symbols our formulation needs.
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering\small
 \begin{tabularx}{\linewidth}{@{}l X@{}}
 \toprule
@@ -156,7 +170,7 @@ $\Sset_k=\{i: k\in\QS{i}\}$ & holders of skill $k$ \\
 The central variable is $x$; the others are derived from it and only exist to express the
 objectives linearly.
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering\small
 \begin{tabularx}{\linewidth}{@{}l l X@{}}
 \toprule
@@ -207,7 +221,7 @@ w_{j,t} &\le a_{j,t},\quad w_{j,t}\le b_{j,t},\quad w_{j,t}\ge a_{j,t}+b_{j,t}-1
 w_{j,t} &\le y_j && \forall j,t && \text{(rejected: no window)} \label{c:wy}
 \end{align}
 
-\begin{figure}[ht]
+\begin{figure}[!htbp]
 \centering
 \begin{tikzpicture}[x=7mm,y=6mm,font=\small]
   \foreach \t in {1,...,14} { \node[cink,font=\scriptsize] at (\t,-0.9) {\t}; }
@@ -264,7 +278,8 @@ $b_{j,t}=1$ for all $d_j<t\le e_j$, which gives the bounds on $L_j$ and $\ell_j$
 \end{proof}
 
 So the model can \emph{overstate} a duration or a lateness but never understate it, and the true
-value is always available to it. \Cref{sec:objectives} shows why this is enough.
+value is always available to it. The course reference model (folder \texttt{reference\_model/})
+only tracks an end date $E_j\ge t\,X_{i,j,k,t}$; the window also gives the start, hence the span. \Cref{sec:objectives} shows why this is enough.
 
 \paragraph{Valid inequalities (cuts).}
 They remove no schedule but help the solver prove optimality.
@@ -284,7 +299,7 @@ trivially satisfied.
 \section{Objectives}\label{sec:objectives}
 %=====================================================================
 
-\begin{table}[ht]
+\begin{table}[!htbp]
 \centering\small
 \renewcommand{\arraystretch}{1.25}
 \begin{tabularx}{\linewidth}{@{}l l c X@{}}
@@ -371,6 +386,8 @@ its true values).
 \end{proof}
 
 \subsection{\texorpdfstring{$\varepsilon$}{Epsilon}-constraint (two objectives)}
+The classical $\varepsilon$-constraint method~\cite{haimes,ehrgott} optimises one objective and
+bounds the other.
 
 \begin{algorithm}[H]
 \caption{$\varepsilon$-constraint for (profit, $f$)}\label{alg:eps}
@@ -390,6 +407,8 @@ The tie-breaking term $+v_f$ in \eqref{eq:weighted} prevents weakly dominated po
 lowers $\varepsilon$ by at least one, so at most $\mathrm{ub}_f-\mathrm{lb}_f+1$ solves are needed.
 
 \subsection{Disjunctive exclusion (any number of objectives)}
+This is the method of Sylva and Crema~\cite{sylva} for multi-objective integer programs: after each
+point, require the next one to be strictly better on at least one objective.
 
 \begin{algorithm}[H]
 \caption{Disjunctive exclusion}\label{alg:disj}
@@ -437,7 +456,7 @@ only.
 CP-SAT reports \texttt{OPTIMAL} for the maximum profit, but a certificate that can be checked step by
 step is stronger. It rests on a classical result.
 
-\begin{theorem}[Hall / Gale]\label{thm:hall}
+\begin{theorem}[Hall~\cite{hall} / Gale~\cite{gale}]\label{thm:hall}
 Ignoring due dates, a set $P\subseteq\J$ of projects can be fully staffed if and only if
 \[
 \sum_{j\in P}\ \sum_{k\in T\cap\QJ{j}} n_{j,k} \;\le \sum_{i:\ \QS{i}\cap T\neq\emptyset}\avail{i}
@@ -467,6 +486,14 @@ skills $T$, which is the stated inequality.
 When every listed set is ruled out, $z$ is the maximum profit. The final plan is re-checked by the
 independent checker.
 
+\paragraph{Example (toy instance).} The three employees can work $5+4+4=13$ days. Taking all five
+projects needs $3+3+3+3+2=14$ person-days in the skills $T=\{A,B,C\}$, so the Hall inequality for
+$T$ fails ($14>13$) and the trivial bound $g=80$ is impossible. Every other set passes all Hall
+inequalities, and the only one with gain above the best profit $z=65$ is $P=\{1,2,3,4\}$ ($g=70$).
+The sub-model asks whether $P$ can be staffed with penalty $\le 70-65-1=4$: \texttt{INFEASIBLE},
+because three of these projects are due on day~3 and the best penalty is $6$ (profit $64$). No set is
+left, so $65$ is the maximum.
+
 %=====================================================================
 \section{Results}\label{sec:results}
 %=====================================================================
@@ -477,7 +504,7 @@ exact counts can shift slightly between runs; every other number is exact.
 
 \subsection{The instances}
 
-\begin{table}[H]
+\begin{center}\begin{minipage}{\linewidth}
 \centering\small
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
@@ -488,19 +515,19 @@ medium & 22 & 5 & 15 & 1{,}298 & 1.32 \\
 large  & 36 & 6 & 25 & 3{,}939 & 1.41 \\
 \bottomrule
 \end{tabular}
-\caption{The three given instances. All ask for more person-days than the staff can supply.}
-\end{table}
+\captionof{table}{The three given instances. All ask for more person-days than the staff can supply.}
+\end{minipage}\end{center}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.92\linewidth]{figures/demand_vs_capacity.pdf}
+\includegraphics[width=0.62\linewidth]{figures/demand_vs_capacity.pdf}
 \caption{Total demand against total capacity. No single skill is overbooked, but the same people
 hold several skills, so the projects compete for them: some must be declined.}
 \end{figure}
 
 \subsection{Maximum profit, certified}
 
-\begin{table}[H]
+\begin{center}\begin{minipage}{\linewidth}
 \centering\small
 \begin{tabular}{@{}lrrr@{}}
 \toprule
@@ -515,16 +542,12 @@ Certificate time & $<0.1$\,s & 3.1\,s & 95.6\,s \\
 Late projects in the maximum-profit plan & 0 & 3 & 2 \\
 \bottomrule
 \end{tabular}
-\caption{The certificate of \cref{thm:hall} proves all three maxima independently of CP-SAT's own
-optimality proof. Being late on a lucrative project can be worth more than declining it.}
-\end{table}
+\captionof{table}{The certificate of \cref{thm:hall} proves all three maxima independently of CP-SAT's own
+optimality proof. Each bound is valid and the last is reached by a real plan: on large, the trivial
+bound is 1{,}020, Hall's theorem lowers it to 860, and the 775 remaining candidate sets are all ruled
+out in 96\,s. Being late on a lucrative project can be worth more than declining it.}
+\end{minipage}\end{center}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=\linewidth]{figures/proof_ladder.pdf}
-\caption{Proof ladder: each bar is a valid upper bound on the profit, and the last one is reached by
-a real plan.}
-\end{figure}
 
 \subsection{Toy instance: exact fronts}
 
@@ -532,7 +555,7 @@ The two methods return identical fronts for profit against each of the five othe
 proven exact. With the brief's four objectives, \cref{alg:disj} finds 13 Pareto-optimal plans
 (\cref{tab:toy}); with all six objectives, 18.
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering\small
 \begin{tabular}{@{}rrrr|rrrr@{}}
 \toprule
@@ -552,10 +575,10 @@ plan is always Pareto-optimal, because every minimised objective improves by doi
 \label{tab:toy}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.7\linewidth]{figures/conflict_heatmap.pdf}
-\caption{Spearman correlation between objectives on the exact six-objective front (all oriented
+\includegraphics[width=0.5\linewidth]{figures/conflict_heatmap.pdf}
+\caption{Spearman correlation~\cite{spearman} between objectives on the exact six-objective front (all oriented
 ``smaller is better''; negative = conflict). Profit conflicts most with focus ($-0.81$); small
 teams make projects longer ($-0.50$); fairness barely costs profit ($-0.11$).}
 \end{figure}
@@ -566,7 +589,7 @@ On medium, the four-objective search ran for 6 minutes and found 30 mutually non
 of them proven Pareto-optimal. On large, we computed profit against each other objective, 2 minutes
 per pair.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fronts_brief.pdf}
 \caption{Profit against each brief objective. The staircase links the plans that are non-dominated
@@ -574,7 +597,7 @@ in that two-objective view; filled = proven Pareto-optimal, hollow = best found 
 = other plans found.}
 \end{figure}
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering\small
 \begin{tabular}{@{}lcc@{}}
 \toprule
@@ -592,21 +615,21 @@ our runs.}
 \label{tab:price}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=\linewidth]{figures/price_of_objectives.pdf}
+\includegraphics[width=0.8\linewidth]{figures/price_of_objectives.pdf}
 \caption{The same information as \cref{tab:price}: punctuality is cheap on both instances; focused
 employees are expensive, and short projects are expensive on large.}
 \end{figure}
 
-\begin{sidewaysfigure}
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/schedule_medium_tradeoff.pdf}
 \caption{Decision space on medium. Rows are employees, columns are days, each cell is
 \emph{project / skill}. Plan A earns the maximum but delivers 3 projects late (orange); plan B
 gives up 3.1\,\% and delivers everything on time.}
 \label{fig:gantt}
-\end{sidewaysfigure}
+\end{figure}
 
 \subsection{Generated instances}
 
@@ -617,7 +640,7 @@ repository folder \texttt{Datasets/generated/}; the file name gives horizon, emp
 qualifications and seed (\texttt{h15\_s4\_j9\_q5\_seed1} is 15 days, 4 employees, 9 projects,
 5 qualifications, seed 1).
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering\small
 \begin{tabular}{@{}lrrlrc@{}}
 \toprule
@@ -638,9 +661,9 @@ project (objective $f_2$).}
 \label{tab:gen}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.75\linewidth]{figures/scaling.pdf}
+\includegraphics[width=0.45\linewidth]{figures/scaling.pdf}
 \caption{Time to the exact (profit, longest project) front against model size: under 10\,s up to
 about 1{,}350 decision variables, but the time grows quickly and unevenly with size, which is why
 the medium and large fronts run under a time budget.}
@@ -648,7 +671,7 @@ the medium and large fronts run under a time budget.}
 
 \subsection{Verification}
 
-\begin{itemize}
+\begin{itemize}[nosep,leftmargin=*]
   \item \textbf{Brute force.} On 10 random tiny instances (3 days, 2 employees, 3 projects), we list
         every possible schedule, keep the feasible ones, filter the non-dominated ones and compare
         them with the solver's front, for 4 and for 6 objectives: identical in \textbf{20 / 20}
@@ -659,50 +682,30 @@ the medium and large fronts run under a time budget.}
         objective is recomputed from the raw assignments.
 \end{itemize}
 
-%=====================================================================
-\section{Limitations and next steps}
-%=====================================================================
-
-\begin{itemize}
-  \item \textbf{Proving is the bottleneck, not finding.} Good plans appear within seconds; proving
-        that no better plan exists takes hours on medium and large with three or more objectives.
-        Those fronts are valid, mutually non-dominated plans with the proven points marked.
-  \item \textbf{A faster exact method} would decompose the problem: choose the project set first (a
-        knapsack with Hall constraints, as in the certificate), then schedule it. The certificate
-        shows this works for one objective.
-  \item \textbf{Interpretation.} Other readings of the brief (total instead of maximum duration,
-        total employee--project pairs instead of the most loaded employee) change the front. Each is
-        a one-line change of the linking constraints in \cref{tab:objectives}.
-  \item \textbf{The generator} is calibrated on the three given files only (gain grows with workload
-        and urgency, one holiday block per employee).
-\end{itemize}
-
-\appendix
-%=====================================================================
-\section{Comparison with the course reference model}
-%=====================================================================
-
-The reference model (notation, decision variables and full MILP) is reproduced in the repository
-folder \texttt{reference\_model/}.
-
-\begin{table}[H]
-\centering\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabularx}{\linewidth}{@{}l X X@{}}
-\toprule
-& \textbf{Reference MILP (course)} & \textbf{This project (CP-SAT)} \\
-\midrule
-Assignment & $X_{i,j,k,t}$ for every $i,j,k,t$; illegal ones fixed to $0$ & $x$ created only on legal slots $\Leg$ \\
-Coverage & $n_{j,k}Y_j\le\sum X\le n_{j,k}$ & $\sum x=n_{j,k}y_j$ (no useless work) \\
-End date & $E_j\ge t\,X_{i,j,k,t}$ & window $b_{j,t}$ (also gives the start, hence the span) \\
-Lateness & $L_j\ge E_j-d_j$ & $L_j=\sum_{t>d_j}b_{j,t}$ \\
-Objectives & profit only & profit + 3 brief objectives + 2 of ours \\
-Solver & Gurobi (licence) & OR-Tools CP-SAT (free, parallel, proves optimality) \\
-Output & one optimal plan & the full non-dominated set + a certificate for the maximum profit \\
-\bottomrule
-\end{tabularx}
-\caption{Both models have the same maximum profit on every instance; ours adds the measurements
-needed by the other objectives and removes partial work on rejected projects.}
-\end{table}
+\begin{multicols}{2}
+\begin{thebibliography}{9}
+\footnotesize
+\setlength{\itemsep}{0pt}
+\bibitem{brief} V.~Mousseau. \emph{Staffing collaborators on projects}. Project brief, Decision
+  Modelling, MSc Artificial Intelligence, CentraleSup\'elec, 2026--27.
+\bibitem{ortools} L.~Perron, V.~Furnon and F.~Didier. \emph{OR-Tools} and its \emph{CP-SAT} solver,
+  version 9.15. Google. \url{https://developers.google.com/optimization/}
+\bibitem{stuckey} P.~J.~Stuckey. Lazy clause generation: combining the power of SAT and CP (and
+  MIP?) solving. In \emph{CPAIOR 2010}, LNCS 6140, pp.~5--9. Springer, 2010.
+\bibitem{haimes} Y.~Y.~Haimes, L.~S.~Lasdon and D.~A.~Wismer. On a bicriterion formulation of the
+  problems of integrated system identification and system optimization. \emph{IEEE Transactions on
+  Systems, Man, and Cybernetics}, SMC-1(3):296--297, 1971.
+\bibitem{ehrgott} M.~Ehrgott. \emph{Multicriteria Optimization}, 2nd edition. Springer, 2005.
+\bibitem{sylva} J.~Sylva and A.~Crema. A method for finding the set of non-dominated vectors for
+  multiple objective integer linear programs. \emph{European Journal of Operational Research},
+  158(1):46--55, 2004.
+\bibitem{hall} P.~Hall. On representatives of subsets. \emph{Journal of the London Mathematical
+  Society}, 10(1):26--30, 1935.
+\bibitem{gale} D.~Gale. A theorem on flows in networks. \emph{Pacific Journal of Mathematics},
+  7(2):1073--1082, 1957.
+\bibitem{spearman} C.~Spearman. The proof and measurement of association between two things.
+  \emph{American Journal of Psychology}, 15(1):72--101, 1904.
+\end{thebibliography}
+\end{multicols}
 
 \end{document}
